@@ -8,7 +8,7 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Solana](https://img.shields.io/badge/Solana-1.18-purple?style=for-the-badge&logo=solana)](https://solana.com/)
+[![Cronos](https://img.shields.io/badge/Cronos-EVM-purple?style=for-the-badge&logo=cronos)](https://cronos.org/)
 [![Ethereum](https://img.shields.io/badge/Ethereum-1.18-purple?style=for-the-badge&logo=ethereum)](https://ethereum.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
@@ -63,8 +63,15 @@ Every strategy execution runs through fully encrypted channels. Your orders exec
 
 ### Multi-Chain & Multi-Protocol
 An ecosystem of chains and protocols:
-- **Chains**: Solana, Ethereum, Base, Bitcoin, Polygon, Arbitrum
-- **Protocols**: Jupiter, Uniswap, Raydium, Orca, 1inch, Curve
+- **Chains**: Cronos (CRO), Ethereum, Base, Bitcoin, Polygon, Arbitrum
+- **Protocols**: Uniswap, 1inch, Curve, Jupiter, Raydium, Orca
+
+### Open Strategy Marketplace with x402 Payment
+Strategies are accessible to everyone through our **x402 payment standard**. Any machine, application, or user can:
+- **Call strategies** on-demand via standardized payment interfaces
+- **Combine strategies** to create complex execution workflows
+- **Integrate strategies** into their own builders and applications
+- **Pay for execution** using the x402 payment mechanism, enabling seamless strategy composability across the ecosystem
 
 ---
 
@@ -77,6 +84,7 @@ A unified registry where traders browse, publish, fork, and deploy:
 - **Sealed strategies** for protected logic
 - **Encrypted order types** for hidden intent
 - **Private execution environments** for strategy artifacts
+- **x402 payment integration** enabling any machine to call, combine, and execute strategies
 
 ### 2. The Builder Layer
 A full-stack development environment with:
@@ -84,6 +92,7 @@ A full-stack development environment with:
 - **Flow mode**: Visual graph editor for non-coders
 - Modern trading ergonomics with privacy composition
 - **Build, seal, and deploy** strategies with one click
+- **Open integration**: Use strategies in your own builders and applications via x402
 
 ### 3. The Runtime & Deployment Layer
 One-click deployment across:
@@ -118,6 +127,8 @@ Our platform leverages cutting-edge cryptographic privacy:
 - 🧩 **Composable**: Chain privacy primitives together seamlessly
 - 🚀 **Deployable**: One-click deployment of sealed strategy artifacts
 - 📚 **Standard Library**: Reusable patterns for private DeFi execution
+- 🔌 **x402 Integration**: Call, combine, and use strategies in your own applications
+- 🌐 **Open Access**: Any machine can execute strategies via standardized payment interfaces
 
 **For the Ecosystem:**
 - 🌐 **Unified Platform**: Bridge between research and practice
@@ -192,7 +203,7 @@ graph LR
 
 - Node.js 18+ 
 - npm or yarn
-- Solana CLI (for local development)
+- Cronos/EVM compatible wallet (for CRO testnet)
 
 ### Installation
 
@@ -215,9 +226,18 @@ Visit `http://localhost:3000` to see the application.
 Create a `.env.local` file:
 
 ```env
-NEXT_PUBLIC_SOLANA_NETWORK=devnet
-NEXT_PUBLIC_RPC_URL=your_rpc_url
+NEXT_PUBLIC_NETWORK=croTestnet
+NEXT_PUBLIC_RPC_URL=https://evm-t3.cronos.org
+NEXT_PUBLIC_CHAIN_ID=338
 ```
+
+### Strategy Payment with x402
+
+Strategies on Siphon Protocol use the **x402 payment standard** for execution fees. This enables:
+- **Universal access**: Any machine or application can call strategies
+- **Composability**: Combine multiple strategies into complex workflows
+- **Integration**: Use strategies in your own builders and applications
+- **Standardized payments**: Seamless fee handling across the ecosystem
 
 ---
 

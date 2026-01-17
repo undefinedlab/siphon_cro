@@ -40,12 +40,12 @@ export default function BuildNav({
   
   const submenuRef = useRef<HTMLDivElement>(null);
   
-  const chains = ['Sepolia', 'Solana', 'Zcash', 'Bitcoin', 'XMR', 'Ethereum'];
+  const chains = ['Cronos Testnet', 'Solana', 'Zcash', 'Bitcoin', 'XMR', 'Ethereum'];
   const dexes = ['Uniswap', 'Raydium', 'Jupiter', 'Orca', 'Serum', 'Meteora'];
   const strategies = ['Limit Order', 'Buy Dip', 'Sell Rally', 'DCA'];
   
   // Active options
-  const activeChain = 'Sepolia';
+  const activeChain = 'Cronos Testnet';
   const activeDex = 'Uniswap';
   const activeStrategy = 'Limit Order';
   

@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { generateZKData } from './zkHandler'; // Removed encodeProof as it's not needed
 import entrypointArtifact from "../../contract/artifacts/src/Entrypoint.sol/Entrypoint.json";
 
-const SEPOLIA_CHAIN_ID = 11155111;
+const CRO_TESTNET_CHAIN_ID = 338;
 const NATIVE_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 const ENTRYPOINT_ADDRESS = '0x531993250171ca1173e96446a5e531F3e58D624D';
@@ -49,10 +49,10 @@ export async function instantSwap(
         const dstToken = TOKENS[dstTokenUpper as keyof typeof TOKENS];
         const srcAmount = ethers.parseUnits(_amount, srcToken.decimals);
         
-        console.log(`Swap - Chain: ${SEPOLIA_CHAIN_ID}, From ${srcAmount.toString()} ${srcToken.symbol} to ${dstToken.symbol}`);
+        console.log(`Swap - Chain: ${CRO_TESTNET_CHAIN_ID}, From ${srcAmount.toString()} ${srcToken.symbol} to ${dstToken.symbol}`);
         // Generate ZK data
         const zkData = await generateZKData(
-            SEPOLIA_CHAIN_ID,
+            CRO_TESTNET_CHAIN_ID,
             { symbol: srcToken.symbol, decimals: srcToken.decimals, address: srcToken.address},
             _amount,
             _recipient
@@ -137,10 +137,10 @@ export async function getEthersProviderAndSigner() {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
 
-    // Check if we're on Sepolia
+    // Check if we're on Cronos Testnet
     const network = await provider.getNetwork();
-    if (network.chainId !== BigInt(SEPOLIA_CHAIN_ID)) {
-        throw new Error(`Please switch to Sepolia network. Current network: ${network.chainId}`);
+    if (network.chainId !== BigInt(CRO_TESTNET_CHAIN_ID)) {
+        throw new Error(`Please switch to Cronos Testnet network. Current network: ${network.chainId}`);
     }
 
     return { provider, signer };

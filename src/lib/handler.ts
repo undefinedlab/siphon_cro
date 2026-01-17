@@ -6,7 +6,7 @@ import nativeVaultAbiJson from './abi/NativeVault.json';
 import merkleTreeAbiJson from './abi/MerkleTree.json';
 
 // --------- Constants ----------
-const VAULT_CHAIN_ID = 11155111; // Sepolia id
+const VAULT_CHAIN_ID = 338; // Cronos Testnet id
 const NATIVE_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const ENTRYPOINT_ADDRESS = '0x531993250171ca1173e96446a5e531F3e58D624D';
 
@@ -199,18 +199,32 @@ export async function deposit(_token: string, _amount: string) {
 
     const commitment = depositLog.args._leaf.toString();
 
+    // Get block number from receipt (ensure it's a number)
+    const blockNumber = receipt.blockNumber ? Number(receipt.blockNumber) : null;
+    if (blockNumber) {
+      console.log(`Saving deposit with block number: ${blockNumber}`);
+    } else {
+      console.warn("Warning: Receipt does not have blockNumber, deposit will not be optimized for querying");
+    }
+
     // Update localStorage with commitment (use commitment as final key)
     finalDepositId = `${VAULT_CHAIN_ID}-${_token}-${commitment}`;
     localStorage.removeItem(depositId); // Remove temp key
-    localStorage.setItem(finalDepositId, JSON.stringify({
+    const depositData: any = {
       ...commitmentData,
       commitment
-    }));
+    };
+    if (blockNumber) {
+      depositData.blockNumber = blockNumber;
+    }
+    localStorage.setItem(finalDepositId, JSON.stringify(depositData));
 
     console.log("✅ Deposit successful!");
     console.log("Precommitment:", commitmentData.precommitment);
     console.log("Commitment (from event):", commitment);
     console.log("Transaction hash:", receipt.hash);
+    console.log("Block number:", blockNumber);
+    console.log("Saved to localStorage key:", finalDepositId);
 
     return { success: true, executeTransaction: receipt.hash };
 

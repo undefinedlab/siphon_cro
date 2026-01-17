@@ -5,9 +5,11 @@ import { ReactFlow, ReactFlowProvider, Background, Node, Edge, Handle, Position,
 import '@xyflow/react/dist/style.css';
 import "./Discover.css";
 import { createStrategy } from "../../../lib/strategy";
+import { executeStrategyWithX402 } from "../../../lib/x402Handler";
 import { generateZKData } from "../../../lib/zkHandler";
 import { walletManager } from "../../../lib/walletManager";
 import { payExecutionFee } from "../../../lib/handler";
+import { initializeWithProvider, isInitialized } from "../../../lib/nexus";
 import { formatAmount as formatAmountUtil, calculateExchange as calculateExchangeUtil, fetchCoinPrices, calculateVariableCost, calculateFixedCost, getTransactionOutputForCost } from "./price_utils";
 
 
@@ -307,6 +309,16 @@ export default function DetailsModal({
     setIsFading(true);
 
     try {
+      // Ensure provider is initialized before proceeding
+      if (!isInitialized()) {
+        if (typeof window !== 'undefined' && window.ethereum) {
+          addLog('Initializing wallet provider...');
+          await initializeWithProvider(window.ethereum);
+        } else {
+          throw new Error('MetaMask not detected. Please install and connect MetaMask.');
+        }
+      }
+      
       addLog('Scanning deposits...');
       
       // Small delay to show the scanning message
@@ -317,12 +329,14 @@ export default function DetailsModal({
         'USDC': { symbol: 'USDC', decimals: 6, address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" }
       };
 
-      const tokenInfo = tokenMap[assetIn || 'USDC'];
-      if (!tokenInfo) throw new Error(`Token ${assetIn} not supported for ZK operations`);
+      // Default to ETH if assetIn is not specified
+      const feeToken = assetIn || 'ETH';
+      const tokenInfo = tokenMap[feeToken];
+      if (!tokenInfo) throw new Error(`Token ${feeToken} not supported for ZK operations`);
 
       // Calculate execution price in user's token
       addLog('Calculating execution price...');
-      const tokenPrice = coinPrices[assetIn || 'USDC'] || (assetIn === 'ETH' ? 3000 : 1);
+      const tokenPrice = coinPrices[feeToken] || (feeToken === 'ETH' ? 3000 : 1);
       const executionPriceInToken = totalCost / tokenPrice;
       
       if (executionPriceInToken <= 0) {
@@ -333,17 +347,17 @@ export default function DetailsModal({
       const executionPriceRounded = parseFloat(executionPriceInToken.toFixed(tokenInfo.decimals));
       const executionPriceStr = executionPriceRounded.toFixed(tokenInfo.decimals);
 
-      addLog(`Execution price: ${executionPriceStr} ${assetIn} ($${totalCost.toFixed(2)})`);
+      addLog(`Execution price: ${executionPriceStr} ${feeToken} ($${totalCost.toFixed(2)})`);
 
       // Check if user has sufficient balance
       const userBalance = parseFloat(amountStr);
       if (userBalance < executionPriceRounded) {
-        throw new Error(`Insufficient balance. Need ${executionPriceStr} ${assetIn}, have ${userBalance} ${assetIn}`);
+        throw new Error(`Insufficient balance. Need ${executionPriceStr} ${feeToken}, have ${userBalance} ${feeToken}`);
       }
 
       const remainingBalance = userBalance - executionPriceRounded;
       const remainingBalanceStr = remainingBalance.toFixed(tokenInfo.decimals);
-      addLog(`Balance check: ${userBalance} ${assetIn} - ${executionPriceStr} ${assetIn} = ${remainingBalanceStr} ${assetIn} remaining`);
+      addLog(`Balance check: ${userBalance} ${feeToken} - ${executionPriceStr} ${feeToken} = ${remainingBalanceStr} ${feeToken} remaining`);
 
       if (remainingBalance <= 0) {
         throw new Error('Insufficient balance remaining for strategy execution after fee payment');
@@ -355,7 +369,7 @@ export default function DetailsModal({
       
       // Generate ZK proof for fee payment (deducting execution price from commitment)
       const feeZkResult = await generateZKData(
-        11155111,
+        338, // Cronos Testnet
         tokenInfo,
         executionPriceStr, // Fee amount in user's token (properly formatted)
         vaultContractAddress // Recipient is vault (we're updating commitment, not withdrawing)
@@ -368,7 +382,7 @@ export default function DetailsModal({
       addLog('Fee payment proof generated');
       
       const feePaymentResult = await payExecutionFee(
-        assetIn || 'USDC',
+        feeToken,
         executionPriceStr, // Execution price in user's token (properly formatted)
         executionPriceStr, // Amount for proof verification (must match the proof's withdrawnValue)
         feeZkResult.withdrawalTxData.stateRoot || "0",
@@ -382,6 +396,10 @@ export default function DetailsModal({
       }
 
       addLog(`✅ Fee payment successful! Transaction: ${feePaymentResult.transactionHash}`);
+      
+      // Extract nullifier from fee payment for x402 middleware
+      const paymentNullifier = feeZkResult.withdrawalTxData.nullifierHash.toString();
+      addLog(`Payment nullifier: ${paymentNullifier.substring(0, 20)}...`);
 
       // Save new commitment after fee payment to localStorage (so it can be used for strategy execution)
       if (feeZkResult.newDeposit && feeZkResult.newDepositKey) {
@@ -400,7 +418,7 @@ export default function DetailsModal({
       // This will use the new commitment created after fee payment
       addLog('Generating strategy execution proof with remaining balance...');
       const zkResult = await generateZKData(
-        11155111, 
+        338, // Cronos Testnet
         tokenInfo,
         remainingBalanceStr, // Use remaining balance after fee (properly formatted)
         vaultContractAddress
@@ -417,14 +435,14 @@ export default function DetailsModal({
       const strategyPayload = {
         user_id: "user_123",
         strategy_type: "LIMIT_ORDER",
-        asset_in: assetIn || "USDC",
+        asset_in: feeToken,
         asset_out: assetOut,
         amount: amount,
         upper_bound: targetPrice,
         lower_bound: 0.0,
         recipient_address: recipient,
         // This pool address needs to be dynamically determined based on asset_in, asset_out, and fee
-        // For now, using a hardcoded WETH/USDC 0.05% pool on Sepolia
+        // For now, using a hardcoded WETH/USDC 0.05% pool on Cronos Testnet
         pool_address: "0x3289680dD4d6C10bb19b899729cda5eEF58AEfF1",
         zk_proof: {
           proof: withdrawalTxData.proof,
@@ -435,8 +453,26 @@ export default function DetailsModal({
         }
       };
 
-      addLog('Sending payload to backend...');
-      const result = await createStrategy(strategyPayload);
+      // Generate a strategy ID (can be hash of payload or use strategy name)
+      const strategyId = selectedStrategy.name.toLowerCase().replace(/\s+/g, '-') || 'strategy-123';
+      
+      addLog('Sending payload to x402 middleware...');
+      addLog(`Using payment nullifier: ${paymentNullifier.substring(0, 20)}...`);
+      
+      // Use x402 middleware for strategy execution
+      const apiToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
+      const result = await executeStrategyWithX402(
+        strategyId,
+        strategyPayload,
+        paymentNullifier,
+        {
+          apiToken,
+          on402Response: (paymentResponse) => {
+            addLog(`⚠️ Payment required: ${paymentResponse.message}`);
+            addLog('Please ensure fee payment transaction is confirmed.');
+          }
+        }
+      );
 
       if (result.success) {
         addLog('Payload received, processing execution...');
@@ -658,7 +694,7 @@ export default function DetailsModal({
                         const tags: Array<{ label: string; field: string; options?: string[] }> = [];
                         
                         if (nodeData?.type === 'deposit') {
-                          tags.push({ label: 'Chain', field: 'chain', options: ['Sepolia'] });
+                          tags.push({ label: 'Chain', field: 'chain', options: ['Cronos Testnet'] });
                           tags.push({ label: 'Token A', field: 'tokenA', options: ['USDC', 'ETH'] });
                           tags.push({ label: 'Amount', field: 'amount' });
                         } else if (nodeData?.type === 'strategy' && nodeData.strategy === 'Limit Order') {
@@ -668,7 +704,7 @@ export default function DetailsModal({
                           tags.push({ label: 'Dex Type', field: 'dexType', options: ['Uniswap'] });
                           tags.push({ label: 'Token B', field: 'coinB', options: ['ETH', 'USDC'] });
                         } else if (nodeData?.type === 'withdraw') {
-                          tags.push({ label: 'Chain', field: 'chain', options: ['Sepolia'] });
+                          tags.push({ label: 'Chain', field: 'chain', options: ['Cronos Testnet'] });
                           tags.push({ label: 'Address', field: 'address' });
                         }
                         
@@ -730,7 +766,7 @@ export default function DetailsModal({
                                         }}
                                       >
                                         <option value="">Chain</option>
-                                        <option value="Sepolia">Sepolia</option>
+                                        <option value="Cronos Testnet">Cronos Testnet</option>
                                       </select>
                                     </div>
                                     <div className="strategy-step-input-wrapper">

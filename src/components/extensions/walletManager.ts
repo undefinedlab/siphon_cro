@@ -30,11 +30,11 @@ class WalletManager {
         chainId?: string;
       };
 
-      // Switch to Sepolia network (chain ID: 11155111)
+      // Switch to Cronos Testnet (chain ID: 338)
       try {
         await ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0xaa36a7' }], // 11155111 in hex
+          params: [{ chainId: '0x152' }], // 338 in hex
         });
       } catch (switchError: unknown) {
         // If the chain doesn't exist, add it
@@ -43,19 +43,19 @@ class WalletManager {
             await ethereum.request({
               method: 'wallet_addEthereumChain',
               params: [{
-                chainId: '0xaa36a7',
-                chainName: 'Sepolia',
+                chainId: '0x152',
+                chainName: 'Cronos Testnet',
                 nativeCurrency: {
-                  name: 'Ether',
-                  symbol: 'ETH',
+                  name: 'Cronos',
+                  symbol: 'CRO',
                   decimals: 18,
                 },
-                rpcUrls: ['https://sepolia.infura.io/v3/'],
-                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                rpcUrls: ['https://evm-t3.cronos.org'],
+                blockExplorerUrls: ['https://testnet.cronoscan.com'],
               }],
             });
           } catch {
-            return { success: false, error: 'Failed to add Sepolia network. Please add it manually in MetaMask.' };
+            return { success: false, error: 'Failed to add Cronos Testnet network. Please add it manually in MetaMask.' };
           }
         } else {
           // User rejected the switch or other error

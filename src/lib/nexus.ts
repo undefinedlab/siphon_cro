@@ -19,8 +19,8 @@ const ERC20_ABI_ALLOWANCE = [
   "function approve(address spender, uint256 amount) returns (bool)"
 ];
 
-// Sepolia Chain ID
-const SEPOLIA_CHAIN_ID = 11155111;
+// Cronos Testnet Chain ID
+const CRO_TESTNET_CHAIN_ID = 338;
 
 export const TOKEN_MAP: { [key: string]: { address: string, decimals: number, symbol: string } } = {
   'ETH': {
@@ -109,7 +109,7 @@ export async function approveToken(tokenAddress: string, spender: string, amount
   return tokenContract.approve(spender, amount);
 }
 
-// Gets ETH and ERC20 balances for the connected wallet on Sepolia
+// Gets CRO and ERC20 balances for the connected wallet on Cronos Testnet
 export async function getUnifiedBalances() {
   if (!signer || !provider) {
     console.error('Ethers not initialized, cannot get balances.');
@@ -155,14 +155,14 @@ export async function getUnifiedBalances() {
     symbol: bal.symbol,
     balance: bal.balance,
     decimals: bal.decimals,
-    // Mock the breakdown structure to show it's on Sepolia
-    breakdown: [
+    // Mock the breakdown structure to show it's on Cronos Testnet
+        breakdown: [
       {
         balance: bal.balance,
         chain: {
-          id: SEPOLIA_CHAIN_ID,
+          id: CRO_TESTNET_CHAIN_ID,
           logo: '',
-          name: 'Ethereum Sepolia'
+          name: 'Cronos Testnet'
         },
         
         contractAddress: TOKEN_MAP[bal.symbol]?.address as `0x${string}`
@@ -173,7 +173,7 @@ export async function getUnifiedBalances() {
   return unifiedBalances;
 }
 
-// Transfers ETH or an ERC20 token on the same chain (Sepolia).
+// Transfers CRO or an ERC20 token on the same chain (Cronos Testnet).
 
 export async function transferTokens(tokenSymbol: string, amount: string, recipient: string) {
   console.log('transferTokens called with:', { tokenSymbol, amount, recipient });

@@ -58,7 +58,7 @@ export const strategyList: StrategyMetadata[] = [
     category: 'trading', 
     chains: ['base', 'ethereum', 'solana', 'btc'], 
     networks: ['Base', 'Ethereum', 'Solana', 'Bitcoin'],
-    activeNetworks: ['Sepolia'], // Only Sepolia (Ethereum) is active
+    activeNetworks: ['Cronos Testnet'], // Only Cronos Testnet is active
     isActive: true 
   },
   { 

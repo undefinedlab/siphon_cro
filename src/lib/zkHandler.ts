@@ -25,6 +25,7 @@ export interface CommitmentData {
   precommitment: string;
   commitment?: string;
   amount: string;
+  blockNumber?: number; // Block number when deposit was made
 }
 
 export interface WithdrawalTxData {
@@ -99,8 +100,8 @@ export async function generateCommitmentData(
 }
 
 // --------- Helper: Get on-chain leaves ----------
-async function getOnChainLeaves(tokenAddress: string): Promise<bigint[]> {
-  console.log("getOnChainLeaves() tokenAddress:", tokenAddress);
+async function getOnChainLeaves(tokenAddress: string, chainId: number, tokenSymbol: string): Promise<bigint[]> {
+  console.log("getOnChainLeaves() tokenAddress:", tokenAddress, "chainId:", chainId, "tokenSymbol:", tokenSymbol);
   
   const provider = getProvider();
   if (!provider) throw new Error("Provider not found");
@@ -108,14 +109,87 @@ async function getOnChainLeaves(tokenAddress: string): Promise<bigint[]> {
   const entrypoint = await getEntrypointContract(provider);
   const vaultAddress = await entrypoint.getVault(tokenAddress);
   console.log("Vault address (from entrypoint):", vaultAddress);
+  console.log("Entrypoint address:", await entrypoint.getAddress());
 
   const vault = new Contract(vaultAddress, nativeVaultAbiJson.abi as ethers.InterfaceAbi, provider);
   const merkleTreeAddress = await vault.merkleTree();
   console.log("MerkleTree address:", merkleTreeAddress);
+  console.log("Querying LeafInserted events from MerkleTree contract:", merkleTreeAddress);
 
   const merkleTree = new Contract(merkleTreeAddress, merkleTreeAbiJson.abi as ethers.InterfaceAbi, provider);
   const filter = merkleTree.filters.LeafInserted();
-  const logs = await merkleTree.queryFilter(filter, 0, 'latest');
+  
+  // Contract deployment block: 67977934 (PoseidonT3 was first deployed)
+  // Start scanning from a few blocks before deployment for security (67977900)
+  const DEPLOYMENT_BLOCK = 67977900; // ~34 blocks before first deployment
+  const RPC_BLOCK_LIMIT = 2000; // Maximum blocks per query
+  const currentBlock = await provider.getBlockNumber();
+  
+  // Find the minimum block number from deposits saved in localStorage
+  // Simple and direct: look at what we saved, use the earliest block
+  let minDepositBlock: number | null = null;
+  const depositKeyPrefix = `${chainId}-${tokenSymbol}-`;
+  
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(depositKeyPrefix)) continue;
+      
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      
+      // If this deposit has a block number, track the earliest one
+      if (data && data.blockNumber && typeof data.blockNumber === 'number') {
+        if (minDepositBlock === null || data.blockNumber < minDepositBlock) {
+          minDepositBlock = data.blockNumber;
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Error reading deposits from localStorage:", error);
+  }
+  
+  // Use the earliest deposit block we found, or fall back to deployment block
+  const startBlock = minDepositBlock 
+    ? Math.max(DEPLOYMENT_BLOCK, minDepositBlock - 10) // Subtract 10 blocks for safety
+    : DEPLOYMENT_BLOCK;
+  
+  if (minDepositBlock) {
+    console.log(`Found deposits in localStorage. Earliest deposit at block ${minDepositBlock}, querying from block ${startBlock}`);
+  } else {
+    console.log(`No deposits with block numbers found in localStorage, querying from deployment block ${DEPLOYMENT_BLOCK}`);
+  }
+  
+  console.log(`Querying logs from block ${startBlock} to ${currentBlock} (${currentBlock - startBlock} blocks) in chunks...`);
+  
+  // Query logs in chunks to respect RPC block range limit
+  let allLogs: ethers.Log[] = [];
+  let fromBlock = startBlock;
+  let toBlock = Math.min(fromBlock + RPC_BLOCK_LIMIT - 1, currentBlock);
+  
+  while (fromBlock <= currentBlock) {
+    try {
+      console.log(`Querying chunk: blocks ${fromBlock} to ${toBlock} (${toBlock - fromBlock + 1} blocks)...`);
+      const chunkLogs = await merkleTree.queryFilter(filter, fromBlock, toBlock);
+      allLogs = allLogs.concat(chunkLogs);
+      console.log(`Found ${chunkLogs.length} logs in this chunk (total: ${allLogs.length})`);
+      
+      // Move to next chunk
+      fromBlock = toBlock + 1;
+      toBlock = Math.min(fromBlock + RPC_BLOCK_LIMIT - 1, currentBlock);
+      
+      // Small delay to avoid rate limiting
+      if (fromBlock <= currentBlock) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      console.error(`Error querying logs from block ${fromBlock} to ${toBlock}:`, error);
+      // If chunk fails, try to continue with next chunk
+      fromBlock = toBlock + 1;
+      toBlock = Math.min(fromBlock + RPC_BLOCK_LIMIT - 1, currentBlock);
+    }
+  }
+  
+  const logs = allLogs;
   console.log("Fetched LeafInserted logs count:", logs.length);
 
   const merkleTreeInterface = new ethers.Interface(merkleTreeAbiJson.abi as ethers.InterfaceAbi);
@@ -159,7 +233,7 @@ export async function generateZKData(
   const tokenAddress = _token.symbol === 'ETH' ? NATIVE_TOKEN : _token.address;
   let leaves: bigint[] = [];
   try {
-      leaves = await getOnChainLeaves(tokenAddress);
+      leaves = await getOnChainLeaves(tokenAddress, _chainId, _token.symbol);
       console.log("Found leaves count:", leaves.length);
   } catch (err) {
       console.error("Failed to fetch on-chain leaves:", err);

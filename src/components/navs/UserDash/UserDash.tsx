@@ -22,7 +22,7 @@ export default function UserDash({ isLoaded = true, walletConnected }: UserDashP
   const [siphonVaultBalances, setSiphonVaultBalances] = useState<{ [token: string]: number } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDepositMode, setIsDepositMode] = useState(true);
-  const VAULT_CHAIN_ID = 11155111; // Sepolia id
+  const VAULT_CHAIN_ID = 338; // Cronos Testnet id
   
   const [transactionInput, setTransactionInput] = useState({
     token: "ETH",
@@ -264,7 +264,7 @@ export default function UserDash({ isLoaded = true, walletConnected }: UserDashP
           <div className="userdash-balance-card">
             <div className="userdash-balance-header">
               <h2 className="userdash-balance-title">Wallet Balance</h2>
-              <span className="userdash-balance-network">Sepolia</span>
+              <span className="userdash-balance-network">Cronos Testnet</span>
             </div>
             <div className="userdash-balance-content-multi">
               {walletBalances !== null && walletBalances.length > 0 ? (
@@ -289,14 +289,14 @@ export default function UserDash({ isLoaded = true, walletConnected }: UserDashP
               )}
             </div>
             <div className="userdash-balance-description">
-              Your ETH balance on Sepolia network
+              Your CRO balance on Cronos Testnet network
             </div>
           </div>
 
           <div className="userdash-balance-card">
             <div className="userdash-balance-header">
               <h2 className="userdash-balance-title">Siphon Vault Balance</h2>
-              <span className="userdash-balance-network">Sepolia</span>
+              <span className="userdash-balance-network">Cronos Testnet</span>
             </div>
             <div className="userdash-balance-content-multi">
               {siphonVaultBalances !== null && Object.keys(siphonVaultBalances).length > 0 ? (

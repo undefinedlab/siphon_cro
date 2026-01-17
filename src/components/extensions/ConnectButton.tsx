@@ -81,7 +81,7 @@ export default function ConnectButton({ className, onConnected }: { className?: 
     const fetchBalance = () => {
       if (connectedWallet && connectedWallet.id === 'metamask') {
         try {
-          const VAULT_CHAIN_ID = 11155111; // Sepolia id
+          const VAULT_CHAIN_ID = 338; // Cronos Testnet id
           const { details } = getSiphonVaultTotalBalance(VAULT_CHAIN_ID, TOKEN_MAP);
           
           // Get ETH balance from Siphon Vault (case-insensitive lookup)
