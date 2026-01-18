@@ -5,8 +5,8 @@ async function main() {
   const F = poseidon.F;
   
   // Ranodm inputs
-  const existingValue = BigInt("5000000000000000000");
-  const existingNullifier = BigInt("12345");
+  const existingValue = BigInt("7000000000000000000");
+  const existingNullifier = BigInt("34232");
   const existingSecret = BigInt("67890");
   const withdrawnValue = BigInt("1000000000000000000");
   const newNullifier = BigInt("54321");
