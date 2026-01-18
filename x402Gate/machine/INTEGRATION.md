@@ -83,13 +83,3 @@ GET /api/payment/balance/:apiKey
    ```bash
    npm run dev
    ```
-
-## Next Steps
-
-- [ ] Import actual ZK proof generation functions
-- [ ] Test deposit flow
-- [ ] Test fee payment flow
-- [ ] Integrate with x402 middleware
-- [ ] Add API key authentication
-- [ ] Add rate limiting
-- [ ] Production security hardening

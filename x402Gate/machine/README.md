@@ -231,23 +231,3 @@ if (paid) {
   // Forward to backend
 }
 ```
-
-## Production Checklist
-
-- [ ] Change `ENCRYPTION_KEY` to secure random value
-- [ ] Set `SERVICE_PRIVATE_KEY` from secure key management
-- [ ] Fund service wallet
-- [ ] Use production database (PostgreSQL, etc.)
-- [ ] Enable HTTPS
-- [ ] Add rate limiting
-- [ ] Add API key authentication
-- [ ] Set up monitoring
-- [ ] Regular backups
-- [ ] Audit logging
-
-## Notes
-
-- This service requires the actual ZK proof generation code from the main codebase
-- Currently uses placeholder implementations for ZK operations
-- In production, import `generateCommitmentData` and `generateZKData` from main codebase
-- Service wallet must be funded to pay fees on behalf of machines
