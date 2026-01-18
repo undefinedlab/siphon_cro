@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Ahhhhhhhhhhhh, need to kms
 // Debug helper: compute values that the circuit asserts and compare with input.json
 
 const fs = require('fs');
@@ -14,7 +13,7 @@ async function main() {
     process.exit(2);
   }
 
-  const raw = fs.readFileSync(p, 'utf8');
+  const raw = fs.readFileSync(p,'utf8');
   let input;
   try {
     input = JSON.parse(raw);
@@ -26,6 +25,7 @@ async function main() {
   const poseidon = await buildPoseidon();
   const F = poseidon.F;
   const toBig = (x) => (typeof x === 'string' ? BigInt(x) : BigInt(x));
+  
   const treeDepth = 32;
 
   function poseidonHash(arr) {
