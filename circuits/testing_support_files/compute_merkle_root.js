@@ -11,11 +11,9 @@ async function computeMerkleRoot() {
   // Hash up the tree with zeros (32 levels, index 0 => leaf is on left)
   for (let i = 0; i < 32; i++) {
     // pathIndices[i] = 0 means current leaf is on the left
-    // So hash: poseidon([current, 0])
     current = F.toString(poseidon([current, BigInt(0)]));
     console.log(`Level ${i}: ${current}`);
   }
-  
   console.log("\nFinal Merkle Root:", current);
 }
 
